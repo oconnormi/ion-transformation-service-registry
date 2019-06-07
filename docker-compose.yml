@@ -1,0 +1,59 @@
+# Copyright (c) Connexta
+#
+# <p>This is free software: you can redistribute it and/or modify it under the terms of the GNU
+# Lesser General Public License as published by the Free Software Foundation, either version 3 of
+# the License, or any later version.
+#
+# <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Lesser General Public License for more details. A copy of the GNU Lesser General Public
+# License is distributed along with this program and can be found at
+# <http://www.gnu.org/licenses/lgpl.html>.
+
+version: "3.7"
+services:
+  rabbitmq:
+    image: rabbitmq:management
+    hostname: rabbitmq
+    ports:
+      - target: 5672
+        published: 5672
+        protocol: tcp
+      - target: 15672
+        published: 15672
+        protocol: tcp
+    environment:
+      RABBITMQ_DEFAULT_USER: "ion"
+      RABBITMQ_DEFAULT_PASS: "ion"
+    networks:
+      - transform
+  ion-transformation-service-registry:
+    image: ion-transformation-service-registry:latest
+    hostname: transformation-service-registry
+    depends_on:
+      - rabbitmq
+    deploy:
+      restart_policy:
+        condition: on-failure
+    environment:
+      RABBITMQ_USERNAME: "ion"
+      RABBITMQ_PASSWORD: "ion"
+      RABBITMQ_HOST: "rabbitmq"
+      RABBITMQ_PORT: 5672
+      RABBITMQ_VIRTUAL_HOST: "/"
+      RABBITMQ_EXCHANGE: "transformation"
+      RABBITMQ_REQUEST_ROUTING_KEY: "request"
+      RABBITMQ_SERVICE_ROUTING_KEY: "service"
+      RABBITMQ_REQUEST_QUEUE_NAME: "request"
+      RABBITMQ_SERVICE_QUEUE_NAME: "service"
+    networks:
+      - transform
+    configs:
+      - source: spring_config
+        target: /config/application.properties
+networks:
+  transform:
+    external: true
+configs:
+  spring_config:
+    file: target/classes/application.properties
