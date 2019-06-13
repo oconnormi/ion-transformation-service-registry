@@ -31,7 +31,7 @@ License is distributed along with this program and can be found at
     </license>
   </licenses>
 
-  <groupId>transformation</groupId>
+  <groupId>com.connexta.transformation</groupId>
   <artifactId>ion-transformation-service-registry</artifactId>
   <version>0.0.1-SNAPSHOT</version>
 
