@@ -10,13 +10,9 @@
 # License is distributed along with this program and can be found at
 # <http://www.gnu.org/licenses/lgpl.html>.
 
-FROM openjdk:8-jre-alpine
-WORKDIR /transformation-service-registry-app
-# use version from command line argument
-ARG VERSION
-COPY target/ion-transformation-service-registry-${VERSION}.jar ion-transformation-service-registry.jar
-COPY target/classes/application.properties application.properties
-ENTRYPOINT ["java",\
-    "-Djava.security.egd=file:/dev/./urandom",\
-    "-jar",\
-    "ion-transformation-service-registry.jar"]
+FROM openjdk:8-jre-slim
+LABEL maintainer=connexta
+LABEL com.connexta.application=ion-transformation-service-reigstry
+COPY maven/ion-transformation-service-registry-${project.version}.jar /ion-transformation-service-registry
+ENTRYPOINT ["/ion-transformation-service-registry"]
+EXPOSE 8080

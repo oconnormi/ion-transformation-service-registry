@@ -43,6 +43,17 @@ License is distributed along with this program and can be found at
     <tag>HEAD</tag>
   </scm>
 
+  <distributionManagement>
+    <snapshotRepository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
+    <repository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
+  </distributionManagement>
+
   <repositories>
     <repository>
       <id>central</id>
@@ -52,6 +63,18 @@ License is distributed along with this program and can be found at
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
+    </repository>
+    <repository>
+      <id>ossrh</id>
+      <name>OSSRH Snapshots</name>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+      <layout>default</layout>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
     </repository>
     <repository>
       <id>codice</id>
@@ -78,22 +101,29 @@ License is distributed along with this program and can be found at
   </pluginRepositories>
 
   <properties>
-    <version>0.0.1-SNAPSHOT</version>
+    <!-- Project Settings Properties -->
     <java.version>1.8</java.version>
     <resource.delimiter>@</resource.delimiter>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
+
+    <!-- Library Version Properties -->
     <slf4j.version>1.7.25</slf4j.version>
     <spring-boot.version>2.1.3.RELEASE</spring-boot.version>
     <apache-servicemix.version>5.0.4.RELEASE_1</apache-servicemix.version>
-    <directory-maven-plugin.version>0.3.1</directory-maven-plugin.version>
-    <dependency-check-maven-plugin.version>5.0.0-M3</dependency-check-maven-plugin.version>
-    <dependency-plugin.version>3.1.1</dependency-plugin.version>
     <maven-servicemix-depends.version>1.4.0</maven-servicemix-depends.version>
-    <spotless-maven-plugin.version>1.23.0</spotless-maven-plugin.version>
     <jackson.version>2.9.8</jackson.version>
+
+    <!-- Plugin Version Properties -->
+    <directory-maven-plugin.version>0.3.1</directory-maven-plugin.version>
+    <dependency.check.maven.plugin.version>5.0.0-M3</dependency.check.maven.plugin.version>
+    <dependency-plugin.version>3.1.1</dependency-plugin.version>
+    <spotless-maven-plugin.version>1.23.0</spotless-maven-plugin.version>
+    <fabric8.docker.plugin.version>0.30.0</fabric8.docker.plugin.version>
+    <javadoc-plugin.version>3.1.0</javadoc-plugin.version>
+    <source-plugin.version>3.0.1</source-plugin.version>
   </properties>
 
   <dependencyManagement>
@@ -142,13 +172,186 @@ License is distributed along with this program and can be found at
     </dependency>
   </dependencies>
 
+ <profiles>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-source-plugin</artifactId>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>owasp</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.owasp</groupId>
+                        <artifactId>dependency-check-maven</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
+            <reporting>
+                <plugins>
+                    <plugin>
+                        <groupId>org.owasp</groupId>
+                        <artifactId>dependency-check-maven</artifactId>
+                    </plugin>
+                </plugins>
+            </reporting>
+        </profile>
+    </profiles>
+
   <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-release-plugin</artifactId>
+          <version>${release-plugin.version}</version>
+          <configuration>
+            <pushChanges>false</pushChanges>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-source-plugin</artifactId>
+          <version>${source-plugin.version}</version>
+          <executions>
+            <execution>
+              <id>attach-sources</id>
+              <goals>
+                <goal>jar-no-fork</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>${javadoc-plugin.version}</version>
+          <executions>
+            <execution>
+              <id>attach-javadocs</id>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-gpg-plugin</artifactId>
+          <version>1.6</version>
+          <configuration>
+            <passphraseServerId>ion-signing</passphraseServerId>
+            <useAgent>false</useAgent>
+          </configuration>
+          <executions>
+            <execution>
+              <id>sign-artifacts</id>
+              <phase>verify</phase>
+              <goals>
+                <goal>sign</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>io.fabric8</groupId>
+          <artifactId>docker-maven-plugin</artifactId>
+          <version>${fabric8.docker.plugin.version}</version>
+          <executions>
+            <execution>
+              <id>build-image</id>
+              <phase>install</phase>
+              <goals>
+                <goal>build</goal>
+              </goals>
+            </execution>
+            <execution>
+              <id>push-image</id>
+              <phase>deploy</phase>
+              <goals>
+                <goal>push</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>${dependency-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.owasp</groupId>
+          <artifactId>dependency-check-maven</artifactId>
+          <version>${dependency.check.maven.plugin.version}</version>
+          <configuration>
+            <suppressionFile>dependency-check-maven-config.xml</suppressionFile>
+            <!-- Disabling for now <failBuildOnCVSS>4</failBuildOnCVSS> -->
+            <!-- The following properties enable using a mirror for nist NVD data -->
+            <cveUrl12Modified>${owasp.cveUrl12Modified}</cveUrl12Modified>
+            <cveUrl20Modified>${owasp.cveUrl20Modified}</cveUrl20Modified>
+            <cveUrl12Base>${owasp.cveUrl12Base}</cveUrl12Base>
+            <cveUrl20Base>${owasp.cveUrl20Base}</cveUrl20Base>
+            <!-- End NVD mirror configuration -->
+
+            <!-- The following properties enable using a centralized nvd server -->
+            <autoUpdate>${owasp.autoUpdate}</autoUpdate>
+            <databaseDriverName>${owasp.database.driverName}</databaseDriverName>
+            <connectionString>${owasp.database.url}</connectionString>
+            <serverId>${owasp.serverId}</serverId>
+            <!-- End Centralized NVD Server Configuration -->
+
+            <!--Disable by plugin maintainer recommendation on https://github.com/jeremylong/DependencyCheck/issues/978#issuecomment-349620687-->
+            <centralAnalyzerEnabled>false</centralAnalyzerEnabled>
+            <!--Disable because we have a separate NSP analysis step and this plugin has no way to suppress NSP issues as of 3.0.2-->
+            <nspAnalyzerEnabled>false</nspAnalyzerEnabled>
+            <!--Disable .NET analyzers-->
+            <nuspecAnalyzerEnabled>false</nuspecAnalyzerEnabled>
+            <assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
+            <!--Analyzes Ruby Gemfile.lock files, not OSGi bundles-->
+            <bundleAuditAnalyzerEnabled>false</bundleAuditAnalyzerEnabled>
+            <!--We don't use CMake, CocoaPods, AutoConf, or Ruby-->
+            <cmakeAnalyzerEnabled>false</cmakeAnalyzerEnabled>
+            <cocoapodsAnalyzerEnabled>false</cocoapodsAnalyzerEnabled>
+            <autoconfAnalyzerEnabled>false</autoconfAnalyzerEnabled>
+            <rubygemsAnalyzerEnabled>false</rubygemsAnalyzerEnabled>
+            <nodeAnalyzerEnabled>false</nodeAnalyzerEnabled>
+
+          </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.mariadb.jdbc</groupId>
+              <artifactId>mariadb-java-client</artifactId>
+              <version>2.4.1</version>
+            </dependency>
+          </dependencies>
+          <executions>
+            <execution>
+              <phase>package</phase>
+              <goals>
+                <goal>check</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
+
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <version>${dependency-plugin.version}</version>
-      </plugin>
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
@@ -161,23 +364,6 @@ License is distributed along with this program and can be found at
             <goals>
               <goal>repackage</goal>
             </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.commonjava.maven.plugins</groupId>
-        <artifactId>directory-maven-plugin</artifactId>
-        <version>${directory-maven-plugin.version}</version>
-        <executions>
-          <execution>
-            <id>directories</id>
-            <goals>
-              <goal>highest-basedir</goal>
-            </goals>
-            <phase>initialize</phase>
-            <configuration>
-              <property>highest-basedir</property>
-            </configuration>
           </execution>
         </executions>
       </plugin>
@@ -223,57 +409,19 @@ License is distributed along with this program and can be found at
       <plugin>
         <groupId>io.fabric8</groupId>
         <artifactId>docker-maven-plugin</artifactId>
-        <version>0.30.0</version>
-        <extensions>true</extensions>
         <configuration>
           <images>
             <image>
-              <name>ion-transformation-service-registry</name>
+              <name>cnxta/transformation-service-registry:${project.version}</name>
               <build>
-                <dockerFile>${project.basedir}/Dockerfile</dockerFile>
-                <args>
-                  <VERSION>${version}</VERSION>
-                </args>
+                <dockerFile>Dockerfile</dockerFile>
+                <assembly>
+                  <descriptorRef>artifact</descriptorRef>
+                </assembly>
               </build>
-              <run>
-              </run>
             </image>
           </images>
         </configuration>
-        <executions>
-          <execution>
-            <id>start</id>
-            <phase>pre-integration-test</phase>
-            <goals>
-              <goal>build</goal>
-              <goal>start</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>stop</id>
-            <phase>post-integration-test</phase>
-            <goals>
-              <goal>stop</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.owasp</groupId>
-        <artifactId>dependency-check-maven</artifactId>
-        <version>${dependency-check-maven-plugin.version}</version>
-        <configuration>
-          <!-- @TODO Decide how to handle dependency check failures -->
-          <!--<failBuildOnCVSS>4</failBuildOnCVSS>-->
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>
