@@ -93,7 +93,7 @@ License is distributed along with this program and can be found at
     <dependency-plugin.version>3.1.1</dependency-plugin.version>
     <maven-servicemix-depends.version>1.4.0</maven-servicemix-depends.version>
     <spotless-maven-plugin.version>1.23.0</spotless-maven-plugin.version>
-    <jackson.version>2.9.8</jackson.version>
+    <jackson.version>2.12.6.1</jackson.version>
   </properties>
 
   <dependencyManagement>
